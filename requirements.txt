@@ -1,0 +1,6 @@
+pymupdf
+nltk
+fastapi
+uvicorn
+python-multipart
+PyPDF2
