@@ -64,3 +64,11 @@ async def upload_files(files: List[UploadFile] = File(...)):
     build_index_for_upload(upload_folder)
 
     return {"message": "Upload successful", "kb_id": kb_id}
+
+
+if __name__ == "__main__":
+    import os
+    import uvicorn
+
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
