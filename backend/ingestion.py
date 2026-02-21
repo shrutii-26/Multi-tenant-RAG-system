@@ -3,7 +3,7 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 from PyPDF2 import PdfReader
-from backend.config import CHUNK_SIZE, OVERLAP
+from config import CHUNK_SIZE, OVERLAP
 
 # Load embedding model once
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")

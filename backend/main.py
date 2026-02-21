@@ -1,14 +1,14 @@
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
-from backend.retrieval import retrieve
-from backend.generator import generate_answer
+from retrieval import retrieve
+from generator import generate_answer
 import json
 from fastapi import FastAPI, UploadFile, File
 from typing import List
 import os
 import uuid
-from backend.ingestion import build_index_for_upload
+from ingestion import build_index_for_upload
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 

@@ -1,5 +1,5 @@
 from openai import OpenAI
-from backend.config import GROQ_API_KEY, MODEL_NAME
+from config import GROQ_API_KEY, MODEL_NAME
 
 # Create Groq-compatible OpenAI client
 client = OpenAI(api_key=GROQ_API_KEY, base_url="https://api.groq.com/openai/v1")
