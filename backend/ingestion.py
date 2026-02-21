@@ -6,7 +6,16 @@ from PyPDF2 import PdfReader
 from config import CHUNK_SIZE, OVERLAP
 
 # Load embedding model once
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+embedding_model = None
+
+
+def get_embedding_model():
+    global embedding_model
+    if embedding_model is None:
+        from sentence_transformers import SentenceTransformer
+
+        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+    return embedding_model
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
@@ -63,7 +72,8 @@ def build_index_for_upload(upload_folder: str):
         raise ValueError("No text chunks created. PDF may be image-based or empty.")
 
     # Generate embeddings
-    embeddings = embedding_model.encode(all_chunks)
+    model = get_embedding_model()
+    embeddings = model.encode(all_chunks)
     embeddings = np.array(embeddings).astype("float32")
 
     # Safety guard
