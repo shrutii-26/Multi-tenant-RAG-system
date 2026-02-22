@@ -12,7 +12,9 @@ from ingestion import build_index_for_upload
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
+import traceback
 
+print("Starting application...")
 app = FastAPI()
 
 app.add_middleware(
@@ -70,5 +72,11 @@ if __name__ == "__main__":
     import os
     import uvicorn
 
-    port = int(os.environ.get("PORT", 10000))
-    uvicorn.run("main:app", host="0.0.0.0", port=port)
+    try:
+        port = int(os.environ.get("PORT", 10000))
+        print("Launching Uvicorn on port:", port)
+        uvicorn.run(app, host="0.0.0.0", port=port)
+    except Exception as e:
+        print("Startup error occurred:")
+        traceback.print_exc()
+        raise e
