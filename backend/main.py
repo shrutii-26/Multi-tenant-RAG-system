@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from generator import generate_answer
 import os
 import uvicorn
 
