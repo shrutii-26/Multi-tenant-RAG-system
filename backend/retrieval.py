@@ -1,9 +1,7 @@
 import os
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
-
-embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
+from embeddings import get_embeddings
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -14,15 +12,14 @@ def retrieve(query: str, kb_name: str, top_k: int = 4):
     metadata_path = os.path.join(BASE_DIR, "indexes", kb_name, "metadata.npy")
 
     if not os.path.exists(index_path):
-
         raise ValueError(f"Knowledge base not found at {index_path}")
 
     # Load index and metadata
     index = faiss.read_index(index_path)
     metadata = np.load(metadata_path, allow_pickle=True)
 
-    # Embed query
-    query_embedding = embedding_model.encode([query])
+    # Embed query using HuggingFace API
+    query_embedding = get_embeddings([query])
     query_embedding = np.array(query_embedding).astype("float32")
 
     # Search

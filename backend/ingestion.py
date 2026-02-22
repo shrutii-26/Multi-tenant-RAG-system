@@ -1,21 +1,9 @@
 import os
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from PyPDF2 import PdfReader
 from config import CHUNK_SIZE, OVERLAP
-
-# Load embedding model once
-embedding_model = None
-
-
-def get_embedding_model():
-    global embedding_model
-    if embedding_model is None:
-        from sentence_transformers import SentenceTransformer
-
-        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-    return embedding_model
+from embeddings import get_embeddings
 
 
 def extract_text_from_pdf(pdf_path: str) -> str:
@@ -67,16 +55,13 @@ def build_index_for_upload(upload_folder: str):
                 all_chunks.append(chunk)
                 metadata.append({"source": file_name, "content": chunk})
 
-    # Safety guard
     if len(all_chunks) == 0:
         raise ValueError("No text chunks created. PDF may be image-based or empty.")
 
-    # Generate embeddings
-    model = get_embedding_model()
-    embeddings = model.encode(all_chunks)
+    # Generate embeddings using HuggingFace API
+    embeddings = get_embeddings(all_chunks)
     embeddings = np.array(embeddings).astype("float32")
 
-    # Safety guard
     if embeddings.shape[0] == 0:
         raise ValueError("No embeddings generated.")
 
