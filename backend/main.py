@@ -32,12 +32,9 @@ def root():
 
 @app.post("/query")
 def query_rag(request: QueryRequest):
-    try:
-        context, unique_sources, diagnostics = retrieve(
-            query=request.question, kb_name=request.kb_name
-        )
-    except ValueError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+    context, unique_sources, diagnostics = retrieve(
+        query=request.question, kb_name=request.kb_name
+    )
 
     answer = generate_answer(context, request.question)
 
