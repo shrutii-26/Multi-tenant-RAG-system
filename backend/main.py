@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from generator import generate_answer
+from retrieval import retrieve
 import os
 import uvicorn
 
