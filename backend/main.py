@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from generator import generate_answer
 from retrieval import retrieve
+from ingestion import build_index_for_upload
 import os
 import uvicorn
 
