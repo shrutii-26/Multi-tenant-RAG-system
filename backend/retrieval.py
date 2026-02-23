@@ -1,10 +1,9 @@
 import os
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
 from config import TOP_K
 
-from embedding_model import model
+from embedding_model import get_model
 
 
 def retrieve(query: str, kb_name: str):
@@ -19,6 +18,7 @@ def retrieve(query: str, kb_name: str):
         raw = f.read()
         chunks = raw.split("\n===CHUNK===\n")
 
+    model = get_model()
     query_embedding = model.encode([query])
     query_embedding = np.array(query_embedding).astype("float32")
 

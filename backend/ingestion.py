@@ -2,10 +2,9 @@ import os
 import faiss
 import numpy as np
 from PyPDF2 import PdfReader
-from sentence_transformers import SentenceTransformer
 from config import CHUNK_SIZE, OVERLAP
 
-from embedding_model import model
+from embedding_model import get_model
 
 
 def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=OVERLAP):
@@ -32,6 +31,7 @@ def build_index_for_upload(folder_path):
     if not texts:
         raise ValueError("No valid PDF content found.")
 
+    model = get_model()
     embeddings = model.encode(texts)
     embeddings = np.array(embeddings).astype("float32")
 
