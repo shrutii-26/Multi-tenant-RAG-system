@@ -75,3 +75,6 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
         traceback.print_exc()
         return {"error": str(e)}
+
+
+print("UPLOAD ENDPOINT LOADED")
