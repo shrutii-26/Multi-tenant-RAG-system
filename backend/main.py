@@ -42,26 +42,21 @@ def query_rag(request: QueryRequest):
 
 
 from fastapi import UploadFile, File
-from typing import Annotated, List
 
 
 @app.post("/upload")
-async def upload_files(
-    files: Annotated[List[UploadFile], File(description="Multiple files")],
-):
+async def upload_file(file: UploadFile = File(...)):
     kb_id = str(uuid.uuid4())
+
     upload_folder = os.path.join("indexes", kb_id)
     os.makedirs(upload_folder, exist_ok=True)
 
-    for file in files:
-        content = await file.read()
-        with open(os.path.join(upload_folder, file.filename), "wb") as f:
-            f.write(content)
+    file_location = os.path.join(upload_folder, file.filename)
+
+    content = await file.read()
+    with open(file_location, "wb") as f:
+        f.write(content)
 
     build_index_for_upload(upload_folder)
 
-    return {
-        "message": "Upload successful",
-        "kb_id": kb_id,
-        "files_uploaded": [file.filename for file in files],
-    }
+    return {"message": "Upload successful", "kb_id": kb_id, "filename": file.filename}
