@@ -1,13 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from typing import List
+from pydantic import BaseModel
 import os
 import uuid
-from fastapi import UploadFile, File
+
+from ingestion import build_index_for_upload
 from retrieval import retrieve
 from generator import generate_answer
-from ingestion import build_index_for_upload
 
 app = FastAPI()
 
@@ -20,61 +20,52 @@ app.add_middleware(
 )
 
 
-class QueryRequest(BaseModel):
-    question: str
-    kb_name: str
-
-
 @app.get("/")
 def root():
     return {"status": "RAG API running"}
 
 
-@app.post("/query")
-def query_rag(request: QueryRequest):
-    context, unique_sources, diagnostics = retrieve(
-        query=request.question, kb_name=request.kb_name
-    )
-
-    answer = generate_answer(context, request.question)
-
-    return {"answer": answer, "sources": unique_sources, "diagnostics": diagnostics}
+class QueryRequest(BaseModel):
+    question: str
+    kb_name: str
 
 
 @app.post("/upload")
 async def upload_files(files: List[UploadFile] = File(...)):
-    try:
-        # Unique knowledge base ID
-        kb_id = str(uuid.uuid4())
+    kb_id = str(uuid.uuid4())
 
-        upload_folder = os.path.join("indexes", kb_id)
-        os.makedirs(upload_folder, exist_ok=True)
+    folder_path = os.path.join("indexes", kb_id)
+    os.makedirs(folder_path, exist_ok=True)
 
-        # Save all uploaded files
-        for file in files:
-            if not file.filename.lower().endswith(".pdf"):
-                raise ValueError("Only PDF files are supported.")
+    for file in files:
+        if not file.filename.endswith(".pdf"):
+            raise HTTPException(status_code=400, detail="Only PDFs allowed.")
 
-            file_location = os.path.join(upload_folder, file.filename)
+        file_location = os.path.join(folder_path, file.filename)
 
-            with open(file_location, "wb") as f:
-                content = await file.read()
-                f.write(content)
+        with open(file_location, "wb") as f:
+            content = await file.read()
+            f.write(content)
 
-        # Build FAISS index from uploaded folder
-        build_index_for_upload(upload_folder)
+    build_index_for_upload(folder_path)
 
-        return {
-            "message": "Upload successful",
-            "kb_id": kb_id,
-            "files_uploaded": [file.filename for file in files],
-        }
-
-    except Exception as e:
-        import traceback
-
-        traceback.print_exc()
-        return {"error": str(e)}
+    return {
+        "message": "Upload successful",
+        "kb_id": kb_id,
+        "files_uploaded": [file.filename for file in files],
+    }
 
 
-print("UPLOAD ENDPOINT LOADED")
+@app.post("/query")
+def query_rag(request: QueryRequest):
+    context, _, diagnostics = retrieve(
+        query=request.question,
+        kb_name=request.kb_name,
+    )
+
+    answer = generate_answer(context, request.question)
+
+    return {
+        "answer": answer,
+        "diagnostics": diagnostics,
+    }

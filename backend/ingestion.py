@@ -2,78 +2,46 @@ import os
 import faiss
 import numpy as np
 from PyPDF2 import PdfReader
+from sentence_transformers import SentenceTransformer
 from config import CHUNK_SIZE, OVERLAP
-from embeddings import get_embeddings
+
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
-def extract_text_from_pdf(pdf_path: str) -> str:
-    text = ""
-    reader = PdfReader(pdf_path)
-
-    for page in reader.pages:
-        page_text = page.extract_text()
-        if page_text:
-            text += page_text + "\n"
-
-    return text.strip()
-
-
-def chunk_text(text: str, chunk_size: int, overlap: int):
+def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=OVERLAP):
     chunks = []
     start = 0
-
     while start < len(text):
         end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
+        chunks.append(text[start:end])
         start = end - overlap
-
     return chunks
 
 
-def build_index_for_upload(upload_folder: str):
+def build_index_for_upload(folder_path):
+    texts = []
 
-    all_chunks = []
-    metadata = []
-
-    # Read all PDFs inside upload folder
-    for file_name in os.listdir(upload_folder):
+    for file_name in os.listdir(folder_path):
         if file_name.endswith(".pdf"):
-            pdf_path = os.path.join(upload_folder, file_name)
+            reader = PdfReader(os.path.join(folder_path, file_name))
+            full_text = ""
+            for page in reader.pages:
+                full_text += page.extract_text() or ""
+            texts.extend(chunk_text(full_text))
 
-            text = extract_text_from_pdf(pdf_path)
+    if not texts:
+        raise ValueError("No valid PDF content found.")
 
-            if not text:
-                print(f"WARNING: No text extracted from {file_name}")
-                continue
-
-            chunks = chunk_text(text, CHUNK_SIZE, OVERLAP)
-
-            print(f"{file_name} -> Total chunks: {len(chunks)}")
-
-            for chunk in chunks:
-                all_chunks.append(chunk)
-                metadata.append({"source": file_name, "content": chunk})
-
-    if len(all_chunks) == 0:
-        raise ValueError("No text chunks created. PDF may be image-based or empty.")
-
-    # Generate embeddings using HuggingFace API
-    embeddings = get_embeddings(all_chunks)
+    embeddings = model.encode(texts)
     embeddings = np.array(embeddings).astype("float32")
 
-    if embeddings.shape[0] == 0:
-        raise ValueError("No embeddings generated.")
-
-    # Build FAISS index
     dimension = embeddings.shape[1]
     index = faiss.IndexFlatL2(dimension)
     index.add(embeddings)
 
-    # Save index
-    faiss.write_index(index, os.path.join(upload_folder, "index.faiss"))
+    faiss.write_index(index, os.path.join(folder_path, "index.faiss"))
 
-    # Save metadata
-    np.save(os.path.join(upload_folder, "metadata.npy"), metadata)
-
-    print("Index built successfully.")
+    # Save chunks
+    with open(os.path.join(folder_path, "chunks.txt"), "w", encoding="utf-8") as f:
+        for chunk in texts:
+            f.write(chunk.replace("\n", " ") + "\n===CHUNK===\n")

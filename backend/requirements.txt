@@ -1,9 +1,10 @@
 fastapi
 uvicorn
+pydantic
+python-multipart
+sentence-transformers
 faiss-cpu
-PyPDF2
 numpy
+PyPDF2
 openai
 python-dotenv
-requests
-python-multipart

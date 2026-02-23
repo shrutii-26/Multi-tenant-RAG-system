@@ -1,47 +1,31 @@
 import os
 import faiss
 import numpy as np
-from embeddings import get_embeddings
+from sentence_transformers import SentenceTransformer
+from config import TOP_K
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
-def retrieve(query: str, kb_name: str, top_k: int = 4):
+def retrieve(query: str, kb_name: str):
+    folder_path = os.path.join("indexes", kb_name)
 
-    index_path = os.path.join(BASE_DIR, "indexes", kb_name, "index.faiss")
-    metadata_path = os.path.join(BASE_DIR, "indexes", kb_name, "metadata.npy")
+    if not os.path.exists(folder_path):
+        raise ValueError("Knowledge base not found.")
 
-    if not os.path.exists(index_path):
-        raise ValueError(f"Knowledge base not found at {index_path}")
+    index = faiss.read_index(os.path.join(folder_path, "index.faiss"))
 
-    # Load index and metadata
-    index = faiss.read_index(index_path)
-    metadata = np.load(metadata_path, allow_pickle=True)
+    with open(os.path.join(folder_path, "chunks.txt"), "r", encoding="utf-8") as f:
+        raw = f.read()
+        chunks = raw.split("\n===CHUNK===\n")
 
-    # Embed query using HuggingFace API
-    query_embedding = get_embeddings([query])
+    query_embedding = model.encode([query])
     query_embedding = np.array(query_embedding).astype("float32")
 
-    # Search
-    distances, indices = index.search(query_embedding, top_k)
+    distances, indices = index.search(query_embedding, TOP_K)
 
-    retrieved_chunks = []
-    unique_sources = set()
-    diagnostics = []
+    retrieved_chunks = [chunks[i] for i in indices[0] if i < len(chunks)]
 
-    for rank, idx in enumerate(indices[0]):
-        chunk_data = metadata[idx]
-        retrieved_chunks.append(chunk_data["content"])
-        unique_sources.add(chunk_data["source"])
+    context = "\n".join(retrieved_chunks)
 
-        diagnostics.append(
-            {
-                "rank": rank + 1,
-                "source": chunk_data["source"],
-                "distance": float(distances[0][rank]),
-            }
-        )
-
-    context = "\n\n".join(retrieved_chunks)
-
-    return context, list(unique_sources), diagnostics
+    return context, [], {"distances": distances.tolist()}
