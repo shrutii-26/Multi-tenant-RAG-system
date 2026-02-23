@@ -52,7 +52,6 @@ async def upload_files(files: List[UploadFile] = File(...)):
     return {
         "message": "Upload successful",
         "kb_id": kb_id,
-        "files_uploaded": [file.filename for file in files],
     }
 
 
