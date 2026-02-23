@@ -5,7 +5,7 @@ from PyPDF2 import PdfReader
 from sentence_transformers import SentenceTransformer
 from config import CHUNK_SIZE, OVERLAP
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+from embedding_model import model
 
 
 def chunk_text(text, chunk_size=CHUNK_SIZE, overlap=OVERLAP):

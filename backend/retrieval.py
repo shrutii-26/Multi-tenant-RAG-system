@@ -4,7 +4,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 from config import TOP_K
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
+from embedding_model import model
 
 
 def retrieve(query: str, kb_name: str):
