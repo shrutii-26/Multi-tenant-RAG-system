@@ -4,7 +4,7 @@ from pydantic import BaseModel
 from typing import List
 import os
 import uuid
-
+from fastapi import UploadFile, File
 from retrieval import retrieve
 from generator import generate_answer
 from ingestion import build_index_for_upload
@@ -41,22 +41,37 @@ def query_rag(request: QueryRequest):
     return {"answer": answer, "sources": unique_sources, "diagnostics": diagnostics}
 
 
-from fastapi import UploadFile, File
-
-
 @app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    kb_id = str(uuid.uuid4())
+async def upload_files(files: List[UploadFile] = File(...)):
+    try:
+        # Unique knowledge base ID
+        kb_id = str(uuid.uuid4())
 
-    upload_folder = os.path.join("indexes", kb_id)
-    os.makedirs(upload_folder, exist_ok=True)
+        upload_folder = os.path.join("indexes", kb_id)
+        os.makedirs(upload_folder, exist_ok=True)
 
-    file_location = os.path.join(upload_folder, file.filename)
+        # Save all uploaded files
+        for file in files:
+            if not file.filename.lower().endswith(".pdf"):
+                raise ValueError("Only PDF files are supported.")
 
-    content = await file.read()
-    with open(file_location, "wb") as f:
-        f.write(content)
+            file_location = os.path.join(upload_folder, file.filename)
 
-    build_index_for_upload(upload_folder)
+            with open(file_location, "wb") as f:
+                content = await file.read()
+                f.write(content)
 
-    return {"message": "Upload successful", "kb_id": kb_id, "filename": file.filename}
+        # Build FAISS index from uploaded folder
+        build_index_for_upload(upload_folder)
+
+        return {
+            "message": "Upload successful",
+            "kb_id": kb_id,
+            "files_uploaded": [file.filename for file in files],
+        }
+
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+        return {"error": str(e)}
