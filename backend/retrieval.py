@@ -2,19 +2,29 @@ import os
 import faiss
 import numpy as np
 from config import TOP_K
-
 from embedding_model import get_model
+
+BASE_DIR = os.path.dirname(__file__)
+INDEX_DIR = os.path.join(BASE_DIR, "indexes")
 
 
 def retrieve(query: str, kb_name: str):
-    folder_path = os.path.join("indexes", kb_name)
+
+    # Use absolute deterministic path
+    folder_path = os.path.join(INDEX_DIR, kb_name)
 
     if not os.path.exists(folder_path):
-        raise ValueError("Knowledge base not found.")
+        raise ValueError(f"Knowledge base not found at {folder_path}")
 
-    index = faiss.read_index(os.path.join(folder_path, "index.faiss"))
+    index_path = os.path.join(folder_path, "index.faiss")
+    chunks_path = os.path.join(folder_path, "chunks.txt")
 
-    with open(os.path.join(folder_path, "chunks.txt"), "r", encoding="utf-8") as f:
+    if not os.path.exists(index_path) or not os.path.exists(chunks_path):
+        raise ValueError("Index files missing.")
+
+    index = faiss.read_index(index_path)
+
+    with open(chunks_path, "r", encoding="utf-8") as f:
         raw = f.read()
         chunks = raw.split("\n===CHUNK===\n")
 
@@ -24,8 +34,8 @@ def retrieve(query: str, kb_name: str):
 
     distances, indices = index.search(query_embedding, TOP_K)
 
-    retrieved_chunks = [chunks[i] for i in indices[0] if i < len(chunks)]
+    retrieved_chunks = [chunks[i] for i in indices[0] if 0 <= i < len(chunks)]
 
     context = "\n".join(retrieved_chunks)
 
-    return context, [], {"distances": distances.tolist()}
+    return context, retrieved_chunks, {"distances": distances.tolist()}

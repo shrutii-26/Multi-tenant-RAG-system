@@ -9,6 +9,12 @@ from ingestion import build_index_for_upload
 from retrieval import retrieve
 from generator import generate_answer
 
+BASE_DIR = os.path.dirname(__file__)
+INDEX_DIR = os.path.join(BASE_DIR, "indexes")
+
+# Ensure indexes folder exists
+os.makedirs(INDEX_DIR, exist_ok=True)
+
 app = FastAPI()
 
 app.add_middleware(
@@ -34,20 +40,22 @@ class QueryRequest(BaseModel):
 async def upload_files(files: List[UploadFile] = File(...)):
     kb_id = str(uuid.uuid4())
 
-    folder_path = os.path.join("indexes", kb_id)
-    os.makedirs(folder_path, exist_ok=True)
+    # Temporary upload folder
+    upload_folder = os.path.join(INDEX_DIR, kb_id)
+    os.makedirs(upload_folder, exist_ok=True)
 
     for file in files:
         if not file.filename.endswith(".pdf"):
             raise HTTPException(status_code=400, detail="Only PDFs allowed.")
 
-        file_location = os.path.join(folder_path, file.filename)
+        file_location = os.path.join(upload_folder, file.filename)
 
         with open(file_location, "wb") as f:
             content = await file.read()
             f.write(content)
 
-    build_index_for_upload(folder_path)
+    # IMPORTANT: pass both folder + kb_id
+    build_index_for_upload(upload_folder, kb_id)
 
     return {
         "message": "Upload successful",
