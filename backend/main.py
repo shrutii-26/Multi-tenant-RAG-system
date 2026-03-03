@@ -4,6 +4,14 @@ from typing import List
 from pydantic import BaseModel
 import os
 import uuid
+import sys
+
+# Check required environment variables at startup
+required_vars = ["GROQ_API_KEY"]
+missing_vars = [var for var in required_vars if not os.getenv(var)]
+if missing_vars:
+    print(f"ERROR: Missing required environment variables: {', '.join(missing_vars)}", file=sys.stderr)
+    sys.exit(1)
 
 from ingestion import build_index_for_upload
 from retrieval import retrieve
