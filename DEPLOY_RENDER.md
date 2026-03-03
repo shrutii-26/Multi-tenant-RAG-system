@@ -11,12 +11,15 @@ Quick steps to deploy the `backend` on Render.
    - Any other secrets your app needs
 4. Render provides the `PORT` env var automatically; no change needed for it.
 5. Local testing:
+
 ```
 cd backend
 uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
 6. After deploy, check service logs and hit `/` to confirm `{"status":"RAG API running"}`.
 
 Notes:
+
 - Running `uvicorn` from within `backend` ensures local imports like `ingestion` and `retrieval` work without package changes.
 - If you prefer gunicorn, add it to `backend/requirements.txt` and change the start command accordingly.
