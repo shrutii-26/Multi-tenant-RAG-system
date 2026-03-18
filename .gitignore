@@ -8,7 +8,8 @@ __pycache__/
 .env
 
 # Indexes
-indexes/
+indexes/*
+!indexes/.gitkeep
 
 # Node
 node_modules/
